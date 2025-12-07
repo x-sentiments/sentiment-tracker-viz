@@ -17,6 +17,24 @@ import { GrokScoringRequest } from "shared/llm/grokScoring";
 // Vercel Cron sends this header to authenticate
 const CRON_SECRET = process.env.CRON_SECRET;
 
+// Delay between X API calls to avoid rate limiting (X Basic tier: 10 requests per 15 min)
+const X_API_DELAY_MS = 2000; // 2 seconds between API calls
+
+/**
+ * Helper to delay execution
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Check if an error is a rate limit error from X API
+ */
+function isRateLimitError(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  return message.includes('429') || message.includes('rate limit') || message.includes('too many requests');
+}
+
 export async function GET(req: Request) {
   const startTime = Date.now();
   
@@ -34,6 +52,7 @@ export async function GET(req: Request) {
     total_tweets_fetched: 0,
     total_posts_scored: 0,
     errors: [] as string[],
+    market_details: [] as Array<{ id: string; question: string; tweets: number; scored: number }>,
     duration_ms: 0
   };
 
@@ -65,15 +84,20 @@ export async function GET(req: Request) {
     console.log(`[cron] Refreshing ${markets.length} markets`);
 
     // Process each market
-    for (const market of markets) {
+    for (let i = 0; i < markets.length; i++) {
+      const market = markets[i];
+      const marketLabel = `[${i + 1}/${markets.length}] "${market.question.slice(0, 50)}${market.question.length > 50 ? '...' : ''}"`;
+      
       try {
         const templates = market.x_rule_templates as string[] | null;
         
         // Skip markets without X rules
         if (!templates || templates.length === 0) {
-          console.log(`[cron] Skipping market ${market.id} - no X rules`);
+          console.log(`[cron] ${marketLabel} - skipping (no X rules)`);
           continue;
         }
+        
+        console.log(`[cron] ${marketLabel} - processing with ${templates.length} search templates`);
 
         // Fetch outcomes
         const { data: outcomes } = await supabase
@@ -93,17 +117,24 @@ export async function GET(req: Request) {
         if (process.env.X_BEARER_TOKEN) {
           try {
             const query = buildSearchQuery(templates);
+            console.log(`[cron] Market ${market.id} search query: ${query}`);
             
-            // Get most recent post to avoid duplicates
-            const { data: lastPost } = await supabase
+            // Get most recent post to avoid duplicates (don't use .single() as it throws on 0 rows)
+            const { data: lastPosts } = await supabase
               .from("raw_posts")
               .select("x_post_id")
               .eq("market_id", market.id)
               .order("ingested_at", { ascending: false })
-              .limit(1)
-              .single();
+              .limit(1);
 
-            const searchResult = await searchRecentTweets(query, 15, lastPost?.x_post_id);
+            const sinceId = lastPosts?.[0]?.x_post_id;
+            console.log(`[cron] Market ${market.id} since_id: ${sinceId ?? 'none (first fetch)'}`);
+
+            const searchResult = await searchRecentTweets(query, 15, sinceId);
+            console.log(`[cron] Market ${market.id} X API returned ${searchResult.posts.length} tweets`);
+
+            // Add delay after X API call to avoid rate limiting
+            await delay(X_API_DELAY_MS);
             
             // Ingest tweets
             for (const tweet of searchResult.posts) {
@@ -135,9 +166,17 @@ export async function GET(req: Request) {
 
             results.total_tweets_fetched += marketTweets;
           } catch (fetchError) {
-            const msg = `Market ${market.id} fetch: ${(fetchError as Error).message}`;
+            const err = fetchError as Error;
+            const isRateLimit = isRateLimitError(err);
+            const msg = `Market ${market.id} fetch: ${err.message}${isRateLimit ? ' (RATE LIMITED)' : ''}`;
             results.errors.push(msg);
             console.error(`[cron] ${msg}`);
+            
+            // If rate limited, add extra delay before next market
+            if (isRateLimit) {
+              console.log(`[cron] Rate limit hit, waiting 30 seconds before continuing...`);
+              await delay(30000);
+            }
           }
         }
 
@@ -248,10 +287,16 @@ export async function GET(req: Request) {
         }
 
         results.markets_processed++;
-        console.log(`[cron] Market ${market.id}: ${marketTweets} tweets, ${marketScored} scored`);
+        results.market_details.push({
+          id: market.id,
+          question: market.question,
+          tweets: marketTweets,
+          scored: marketScored
+        });
+        console.log(`[cron] ${marketLabel} - complete: ${marketTweets} tweets fetched, ${marketScored} posts scored`);
 
       } catch (marketError) {
-        const msg = `Market ${market.id}: ${(marketError as Error).message}`;
+        const msg = `${marketLabel}: ${(marketError as Error).message}`;
         results.errors.push(msg);
         console.error(`[cron] ${msg}`);
       }
