@@ -3,6 +3,17 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+// Dynamic import to avoid SSR issues with lightweight-charts
+const ProbabilityChart = dynamic(() => import("./ProbabilityChart"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: "300px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="spinner" />
+    </div>
+  ),
+});
 
 interface Outcome {
   id: string;
@@ -113,13 +124,13 @@ export default function MarketDetailPage() {
     return count.toString();
   }
 
-  // Color palette for outcomes
+  // Color palette for outcomes (hex for chart compatibility)
   const outcomeColors = [
-    "var(--accent-green)",
-    "var(--accent-blue)",
-    "var(--accent-purple)",
-    "var(--accent-orange)",
-    "var(--accent-red)"
+    "#22c55e", // green
+    "#3b82f6", // blue
+    "#a855f7", // purple
+    "#f97316", // orange
+    "#ef4444", // red
   ];
 
   if (loading) {
@@ -188,51 +199,11 @@ export default function MarketDetailPage() {
       {/* Chart */}
       <div className="chart-container">
         <div className="chart-title">Probability Over Time</div>
-        {history.length === 0 ? (
-          <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "48px" }}>
-            No history data yet. Probabilities will appear here as posts are analyzed.
-          </div>
-        ) : (
-          <div style={{ position: "relative", height: "250px" }}>
-            {/* Simple SVG chart */}
-            <svg width="100%" height="100%" viewBox="0 0 800 250" preserveAspectRatio="none">
-              {outcomes.map((outcome, oi) => {
-                const points = history.map((snap, i) => {
-                  const x = (i / Math.max(history.length - 1, 1)) * 780 + 10;
-                  const prob = snap.probabilities[outcome.outcome_id] ?? 0;
-                  const y = 240 - prob * 220;
-                  return `${x},${y}`;
-                });
-                return (
-                  <polyline
-                    key={outcome.id}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke={outcomeColors[oi % outcomeColors.length]}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                );
-              })}
-              {/* X axis */}
-              <line x1="10" y1="240" x2="790" y2="240" stroke="var(--border-color)" strokeWidth="1" />
-              {/* Y axis labels */}
-              <text x="5" y="25" fill="var(--text-muted)" fontSize="10">100%</text>
-              <text x="5" y="130" fill="var(--text-muted)" fontSize="10">50%</text>
-              <text x="5" y="238" fill="var(--text-muted)" fontSize="10">0%</text>
-            </svg>
-            {/* Legend */}
-            <div style={{ display: "flex", gap: "16px", marginTop: "12px", justifyContent: "center" }}>
-              {outcomes.map((outcome, i) => (
-                <div key={outcome.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
-                  <div style={{ width: "12px", height: "12px", borderRadius: "2px", background: outcomeColors[i % outcomeColors.length] }} />
-                  <span style={{ color: "var(--text-secondary)" }}>{outcome.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <ProbabilityChart 
+          outcomes={outcomes} 
+          history={history} 
+          colors={outcomeColors} 
+        />
       </div>
 
       {/* Curated Posts */}
