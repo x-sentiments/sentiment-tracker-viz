@@ -169,15 +169,19 @@ export default async function MarketDetailPage({
     Object.keys(probabilities || {}).length > 0
       ? Object.keys(probabilities).map((oid) => {
           const match = outcomes.find((o) => o.outcome_id === oid);
-          return (
-            match || {
-              id: oid,
-              outcome_id: oid,
-              label: oid,
+          if (match) {
+            return {
+              ...match,
               current_probability: probabilities[oid],
-              prior_probability: null,
-            }
-          );
+            };
+          }
+          return {
+            id: oid,
+            outcome_id: oid,
+            label: oid,
+            current_probability: probabilities[oid],
+            prior_probability: null,
+          };
         })
       : outcomes;
 
@@ -227,10 +231,7 @@ export default async function MarketDetailPage({
               className="outcome-card-prob"
               style={{ color: outcomeColors[i % outcomeColors.length] }}
             >
-              {formatProb(
-                probabilities[outcome.outcome_id] ??
-                  outcome.current_probability
-              )}
+              {formatProb(outcome.current_probability)}
             </div>
           </div>
         ))}
@@ -242,6 +243,7 @@ export default async function MarketDetailPage({
         <ProbabilityChart 
           outcomes={outcomes} 
           history={historySnapshots} 
+          currentProbabilities={probabilities}
           colors={outcomeColors} 
         />
       </div>

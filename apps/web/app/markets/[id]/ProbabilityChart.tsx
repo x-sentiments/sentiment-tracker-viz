@@ -18,10 +18,11 @@ interface Snapshot {
 interface ProbabilityChartProps {
   outcomes: Outcome[];
   history: Snapshot[];
+  currentProbabilities?: Record<string, number>;
   colors: string[];
 }
 
-export default function ProbabilityChart({ outcomes, history, colors }: ProbabilityChartProps) {
+export default function ProbabilityChart({ outcomes, history, currentProbabilities, colors }: ProbabilityChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
@@ -99,21 +100,44 @@ export default function ProbabilityChart({ outcomes, history, colors }: Probabil
     };
   }, [outcomes, colors]);
 
-  // Update data when history changes
+  // Update data when history or currentProbabilities changes
   useEffect(() => {
-    if (!chartRef.current || history.length === 0) return;
+    if (!chartRef.current) return;
+
+    // If no history and no current data, do nothing
+    if (history.length === 0 && (!currentProbabilities || Object.keys(currentProbabilities).length === 0)) return;
 
     // Prepare data for each outcome
     outcomes.forEach((outcome) => {
       const series = seriesRef.current.get(outcome.outcome_id);
       if (!series) return;
 
+      // Map history to points
       const data: LineData<Time>[] = history
         .map((snapshot) => ({
           time: (Math.floor(new Date(snapshot.timestamp).getTime() / 1000)) as Time,
           value: snapshot.probabilities[outcome.outcome_id] ?? 0,
         }))
         .sort((a, b) => (a.time as number) - (b.time as number));
+      
+      // If we have current probabilities, append a "now" point
+      // Only append if it's newer than the last history point
+      if (currentProbabilities && typeof currentProbabilities[outcome.outcome_id] === "number") {
+        const nowTimeVal = Math.floor(Date.now() / 1000);
+        const nowTime = nowTimeVal as Time;
+        const lastTime = data.length > 0 ? (data[data.length - 1].time as number) : 0;
+        
+        // Ensure strictly ascending time (Graph will error if not)
+        if (nowTimeVal > lastTime) {
+          data.push({
+            time: nowTime,
+            value: currentProbabilities[outcome.outcome_id],
+          });
+        } else if (data.length > 0) {
+            // Update the last point if it's essentially "now"
+            data[data.length - 1].value = currentProbabilities[outcome.outcome_id];
+        }
+      }
 
       if (data.length > 0) {
         series.setData(data);
@@ -122,9 +146,9 @@ export default function ProbabilityChart({ outcomes, history, colors }: Probabil
 
     // Fit content
     chartRef.current.timeScale().fitContent();
-  }, [history, outcomes]);
+  }, [history, outcomes, currentProbabilities]);
 
-  if (history.length === 0) {
+  if (history.length === 0 && (!currentProbabilities || Object.keys(currentProbabilities || {}).length === 0)) {
     return (
       <div style={{ 
         color: "var(--text-muted)", 
