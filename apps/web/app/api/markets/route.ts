@@ -20,8 +20,9 @@ export async function GET() {
       throw new Error(marketsError.message);
     }
 
-    // Fetch outcomes for all markets
     const marketIds = (markets || []).map((m) => m.id);
+
+    // Fetch outcomes for all markets
     let outcomesMap: Record<
       string,
       Array<{
@@ -31,7 +32,22 @@ export async function GET() {
       }>
     > = {};
 
+    // Fetch market_state for all markets (authoritative probability source)
+    let marketStateMap: Record<string, Record<string, number>> = {};
+
     if (marketIds.length > 0) {
+      // Fetch market_state first - this is the source of truth for current probabilities
+      const { data: marketStates, error: statesError } = await supabase
+        .from("market_state")
+        .select("market_id, probabilities")
+        .in("market_id", marketIds);
+
+      if (!statesError && marketStates) {
+        for (const ms of marketStates) {
+          marketStateMap[ms.market_id] = ms.probabilities as Record<string, number>;
+        }
+      }
+
       const { data: outcomes, error: outcomesError } = await supabase
         .from("outcomes")
         .select("market_id, outcome_id, label, current_probability")
@@ -42,10 +58,14 @@ export async function GET() {
           if (!outcomesMap[o.market_id]) {
             outcomesMap[o.market_id] = [];
           }
+          // Use market_state probability if available, otherwise fall back to outcomes table
+          const stateProbs = marketStateMap[o.market_id];
+          const probability = stateProbs?.[o.outcome_id] ?? o.current_probability;
+
           outcomesMap[o.market_id].push({
             outcome_id: o.outcome_id,
             label: o.label,
-            current_probability: o.current_probability,
+            current_probability: probability,
           });
         }
       }

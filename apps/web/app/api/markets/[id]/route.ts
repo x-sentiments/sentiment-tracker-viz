@@ -28,6 +28,15 @@ export async function GET(_req: Request, { params }: Params) {
       );
     }
 
+    // Fetch market_state (authoritative probability source)
+    const { data: marketState } = await supabase
+      .from("market_state")
+      .select("probabilities, updated_at")
+      .eq("market_id", id)
+      .single();
+
+    const stateProbs = marketState?.probabilities as Record<string, number> | null;
+
     // Fetch outcomes
     const { data: outcomes, error: outcomesError } = await supabase
       .from("outcomes")
@@ -38,10 +47,20 @@ export async function GET(_req: Request, { params }: Params) {
       throw new Error(outcomesError.message);
     }
 
+    // Merge market_state probabilities into outcomes for consistency
+    const outcomesWithProbs = (outcomes || []).map((o) => ({
+      ...o,
+      // Use market_state probability if available, otherwise fall back to outcomes table
+      current_probability: stateProbs?.[o.outcome_id] ?? o.current_probability,
+    }));
+
     return NextResponse.json(
       {
         market,
-        outcomes: outcomes || [],
+        outcomes: outcomesWithProbs,
+        // Also return probabilities map directly for convenience
+        probabilities: stateProbs || {},
+        probabilities_updated_at: marketState?.updated_at || null,
       },
       {
         headers: {

@@ -159,14 +159,9 @@ export default function MarketDetailPage({ params }: Props) {
     "var(--accent-red)"
   ];
 
-  // Get the latest probabilities from history (most recent snapshot)
-  const latestSnapshot = history.length > 0 ? history[history.length - 1] : null;
-  
-  // Helper to get the current probability for an outcome (prefer latest history snapshot)
+  // Use current_probability from outcomes directly - it now comes from market_state via API
+  // This ensures consistency with the main page which uses the same source
   function getCurrentProb(outcome: Outcome): number | null {
-    if (latestSnapshot && outcome.outcome_id in latestSnapshot.probabilities) {
-      return latestSnapshot.probabilities[outcome.outcome_id];
-    }
     return outcome.current_probability;
   }
 
