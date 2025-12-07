@@ -34,10 +34,14 @@ export async function GET(_req: Request, { params }: Params) {
       throw new Error(outcomesError.message);
     }
 
-    return NextResponse.json({
-      market,
-      outcomes: outcomes || []
-    });
+    return NextResponse.json(
+      { market, outcomes: outcomes || [] },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Market detail error:", error);
     return NextResponse.json(

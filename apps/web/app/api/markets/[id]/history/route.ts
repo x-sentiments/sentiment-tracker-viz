@@ -30,10 +30,14 @@ export async function GET(req: Request, { params }: Params) {
       throw new Error(error.message);
     }
 
-    return NextResponse.json({
-      market_id: id,
-      snapshots: snapshots || []
-    });
+    return NextResponse.json(
+      { market_id: id, snapshots: snapshots || [] },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Market history error:", error);
     return NextResponse.json(

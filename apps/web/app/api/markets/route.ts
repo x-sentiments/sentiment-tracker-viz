@@ -53,7 +53,14 @@ export async function GET() {
       outcomes: outcomesMap[m.id] || [],
     }));
 
-    return NextResponse.json({ markets: result });
+    return NextResponse.json(
+      { markets: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error("Markets list error:", error);
     return NextResponse.json(

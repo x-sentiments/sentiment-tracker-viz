@@ -64,15 +64,22 @@ export async function GET(req: Request, { params }: Params) {
       display_labels: labelsMap.get(p.id) || null
     }));
 
-    return NextResponse.json({
-      market_id: id,
-      posts,
-      pagination: {
-        limit,
-        offset,
-        count: posts.length
+    return NextResponse.json(
+      {
+        market_id: id,
+        posts,
+        pagination: {
+          limit,
+          offset,
+          count: posts.length,
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
       }
-    });
+    );
   } catch (error) {
     console.error("Market posts error:", error);
     return NextResponse.json(
