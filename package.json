@@ -2,29 +2,19 @@
   "name": "xai-prediction-ticker",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "workspaces": [
     "apps/*",
     "packages/*",
     "services/*"
   ],
   "scripts": {
-    "dev": "cd apps/web && next dev --turbo",
-    "build": "cd apps/web && next build",
-    "lint": "cd apps/web && next lint",
+    "dev": "npm run dev --workspace=@xai/web",
+    "build": "npm run build --workspace=@xai/web",
+    "lint": "npm run lint --workspace=@xai/web",
     "typecheck": "tsc -b"
   },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.48.0",
-    "next": "14.2.10",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "zod": "^3.23.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
     "typescript": "^5.4.0"
   }
 }
-

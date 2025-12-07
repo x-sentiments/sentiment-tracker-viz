@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const grokOutcomeSchema = z.object({
-  outcome_id: z.string(),
+  id: z.string(),
   label: z.string(),
-  prior: z.number().min(0)
+  prior: z.number().min(0).max(1)
 });
 
 export const grokMarketResponseSchema = z.object({
@@ -12,5 +12,5 @@ export const grokMarketResponseSchema = z.object({
   x_rule_templates: z.array(z.string()).min(1)
 });
 
+export type GrokOutcome = z.infer<typeof grokOutcomeSchema>;
 export type GrokMarketResponse = z.infer<typeof grokMarketResponseSchema>;
-

@@ -1,0 +1,25 @@
+{
+  "name": "@shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./db/types": "./src/db/types.ts",
+    "./contracts/db": "./src/contracts/db.ts",
+    "./probability/contracts": "./src/probability/contracts.ts",
+    "./probability/engine": "./src/probability/engine.ts",
+    "./llm/grokMarket": "./src/llm/grokMarket.ts",
+    "./llm/grokScoring": "./src/llm/grokScoring.ts",
+    "./llm/grokLabels": "./src/llm/grokLabels.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.4.0"
+  }
+}
+
