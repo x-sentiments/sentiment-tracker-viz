@@ -1,0 +1,12 @@
+{
+  "buildCommand": "npm run build --workspace=@xai/web",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/refresh-markets",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

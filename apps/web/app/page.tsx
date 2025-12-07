@@ -33,9 +33,12 @@ export default function HomePage() {
   async function fetchMarkets() {
     try {
       const res = await fetch("/api/markets");
+      const data = await res.json();
+      console.log("[fetchMarkets] Response:", data);
       if (res.ok) {
-        const data = await res.json();
         setMarkets(data.markets || []);
+      } else {
+        console.error("[fetchMarkets] Error:", data.error);
       }
     } catch (e) {
       console.error("Failed to fetch markets:", e);
@@ -58,6 +61,8 @@ export default function HomePage() {
 
       if (res.ok) {
         const data = await res.json();
+        // Refresh markets list before navigating
+        await fetchMarkets();
         router.push(`/markets/${data.market.id}`);
       } else {
         const err = await res.json();
@@ -65,6 +70,7 @@ export default function HomePage() {
       }
     } catch (e) {
       alert("Network error");
+      console.error(e);
     } finally {
       setLoading(false);
     }

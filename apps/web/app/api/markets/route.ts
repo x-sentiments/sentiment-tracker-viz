@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "../../../src/lib/supabase";
+import { createServiceRoleClient } from "../../../src/lib/supabase";
 
 export async function GET() {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = createServiceRoleClient();
 
     // Fetch all active markets
     const { data: markets, error: marketsError } = await supabase
@@ -53,6 +53,7 @@ export async function GET() {
       outcomes: outcomesMap[m.id] || [],
     }));
 
+    console.log(`[markets] Returning ${result.length} markets`);
     return NextResponse.json({ markets: result });
   } catch (error) {
     console.error("Markets list error:", error);

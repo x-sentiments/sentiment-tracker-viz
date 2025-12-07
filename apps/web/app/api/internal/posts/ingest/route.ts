@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createServiceRoleClient } from "../../../../src/lib/supabase";
-import { extractPostFeatures } from "../../../../src/lib/grokClient";
+import { createServiceRoleClient } from "../../../../../src/lib/supabase";
+import { extractPostFeatures } from "../../../../../src/lib/grokClient";
 
 /**
  * Schema for incoming post data from X stream or mock

@@ -1,48 +1,92 @@
 # Dependencies
 node_modules/
-.pnpm-store/
+.pnp/
+.pnp.js
 
-# Build outputs
-.next/
-dist/
-build/
-out/
+# Testing
 coverage/
+*.lcov
+.nyc_output
 
-# Logs
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Environment variables
+# Environment variables - NEVER COMMIT THESE
 .env
 .env.local
 .env.*.local
-!.env.example
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Supabase local
-supabase/.temp/
-supabase/.branches/
-supabase/.cache/
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
 # OS files
 .DS_Store
+*.pem
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Editor
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+*.sublime-project
+*.sublime-workspace
 
-# Vercel
-.vercel/
+# Supabase
+.branches/
+.temp/
+.supabase/
 
-# TypeScript cache
-*.tsbuildinfo
+# Local development
+.turbo/
+*.local
 
-# Large datasets
-data/
-tmp/
+# Logs
+logs/
 
+# Misc
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Debug
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Secrets (additional safety)
+*.key
+secrets/
+credentials/

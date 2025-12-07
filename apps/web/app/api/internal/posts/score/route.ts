@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createServiceRoleClient } from "../../../../src/lib/supabase";
-import { scorePostsForMarket } from "../../../../src/lib/grokClient";
-import { GrokScoringRequest } from "@shared/llm/grokScoring";
+import { createServiceRoleClient } from "../../../../../src/lib/supabase";
+import { scorePostsForMarket } from "../../../../../src/lib/grokClient";
+import { GrokScoringRequest } from "shared/llm/grokScoring";
 
 /**
  * Schema for score request

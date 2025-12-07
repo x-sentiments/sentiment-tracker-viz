@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { probabilityEngineInputSchema } from "@shared/probability/contracts";
-import { computeProbabilities, computeProbabilitiesDirect } from "../../../../src/lib/probabilityAdapter";
+import { probabilityEngineInputSchema } from "shared/probability/contracts";
+import { computeProbabilities, computeProbabilitiesDirect } from "../../../../../src/lib/probabilityAdapter";
 
 const requestSchema = z.object({
   market_id: z.string(),

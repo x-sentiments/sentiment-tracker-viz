@@ -1,11 +1,11 @@
-import { computeProbabilities as sharedCompute } from "@shared/probability/engine";
+import { computeProbabilities as sharedCompute } from "shared/probability/engine";
 import {
   ProbabilityEngineInput,
   ProbabilityEngineResult,
   PostInput
-} from "@shared/probability/contracts";
+} from "shared/probability/contracts";
 import { createServiceRoleClient } from "./supabase";
-import { Database } from "@shared/db/types";
+import { Database } from "shared/db/types";
 
 type RawPost = Database["public"]["Tables"]["raw_posts"]["Row"];
 type ScoredPost = Database["public"]["Tables"]["scored_posts"]["Row"];
@@ -28,7 +28,7 @@ function transformToPostInput(
     stance: number;
     strength: number;
     credibility: number;
-    confidence?: number;
+    confidence: number;
   }> = {};
 
   for (const sp of scoredPosts) {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createServiceRoleClient } from "../../../src/lib/supabase";
+import { createServiceRoleClient } from "../../../../src/lib/supabase";
 
 const askSchema = z.object({
   question: z.string().min(8, "Question must be at least 8 characters")
@@ -70,29 +70,30 @@ export async function POST(req: Request) {
 
     if (similarMarket) {
       // Return existing market
+      console.log("[ask] Found existing market:", similarMarket.id);
       const { data: outcomes } = await supabase
         .from("outcomes")
         .select("*")
         .eq("market_id", similarMarket.id);
 
       return NextResponse.json({
-        market: {
-          id: similarMarket.id,
-          ...similarMarket
-        },
+        market: similarMarket,
         outcomes: outcomes || [],
         existing: true
       });
     }
 
-    // Create new market using mock (replace with Grok when API is available)
+    // Create new market using Grok or fall back to mock
     let marketData;
     try {
-      // Try Grok first (will fail without API key)
-      const { createMarketFromQuestion } = await import("../../../src/lib/grokClient");
+      // Try Grok first
+      const { createMarketFromQuestion } = await import("../../../../src/lib/grokClient");
+      console.log("[ask] Calling Grok API for question:", question);
       marketData = await createMarketFromQuestion(question);
-    } catch {
+      console.log("[ask] Grok response:", JSON.stringify(marketData, null, 2));
+    } catch (grokError) {
       // Fall back to mock
+      console.error("[ask] Grok API failed, using mock:", grokError);
       marketData = createMockMarket(question);
     }
 
