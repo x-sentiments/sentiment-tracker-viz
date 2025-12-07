@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { probabilityEngineInputSchema } from "@xai/shared/probability/contracts";
-import { computeProbabilities, computeProbabilitiesDirect } from "../../../../src/lib/probabilityAdapter";
+import {
+  computeProbabilities,
+  computeProbabilitiesDirect,
+} from "../../../../../src/lib/probabilityAdapter";
 
 const requestSchema = z.object({
   market_id: z.string(),
   // If mode is "direct", use the full payload; otherwise fetch from DB
   mode: z.enum(["fetch", "direct"]).default("fetch"),
   // Optional: override input for direct mode
-  payload: probabilityEngineInputSchema.optional()
+  payload: probabilityEngineInputSchema.optional(),
 });
 
 export async function POST(req: Request) {
   try {
     // Verify internal secret
-    const secret = req.headers.get("x-internal-secret") ?? req.headers.get("x_internal_secret");
+    const secret =
+      req.headers.get("x-internal-secret") ??
+      req.headers.get("x_internal_secret");
     if (!secret || secret !== process.env.INTERNAL_WEBHOOK_SECRET) {
       return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: "Invalid or missing internal secret" } },
+        {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Invalid or missing internal secret",
+          },
+        },
         { status: 401 }
       );
     }
@@ -42,8 +52,8 @@ export async function POST(req: Request) {
       {
         error: {
           code: "PROBABILITY_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error"
-        }
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
       },
       { status: 400 }
     );

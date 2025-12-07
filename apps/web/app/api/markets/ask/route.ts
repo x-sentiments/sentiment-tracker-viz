@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createServiceRoleClient } from "../../../src/lib/supabase";
+import { createServiceRoleClient } from "../../../../src/lib/supabase";
 
 const askSchema = z.object({
   question: z.string().min(8, "Question must be at least 8 characters")
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     let marketData;
     try {
       // Try Grok first (will fail without API key)
-      const { createMarketFromQuestion } = await import("../../../src/lib/grokClient");
+      const { createMarketFromQuestion } = await import("../../../../src/lib/grokClient");
       marketData = await createMarketFromQuestion(question);
     } catch {
       // Fall back to mock
