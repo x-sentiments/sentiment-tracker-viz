@@ -101,6 +101,40 @@ export async function POST(req: Request) {
       }
     }
 
+    // Chain to scoring and probability update if we accepted any posts
+    if (results.accepted > 0) {
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const secret = process.env.INTERNAL_WEBHOOK_SECRET || "";
+
+      // Trigger scoring for this market (fire and forget for speed)
+      fetch(`${baseUrl}/api/internal/posts/score`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-secret": secret,
+        },
+        body: JSON.stringify({
+          market_id: payload.market_id,
+          batch_size: 16,
+        }),
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            // After scoring, trigger probability recomputation
+            await fetch(`${baseUrl}/api/internal/markets/${payload.market_id}/update`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-internal-secret": secret,
+              },
+            });
+          }
+        })
+        .catch((e) => console.error("Pipeline chain error:", e));
+    }
+
     return NextResponse.json({
       status: "processed",
       accepted: results.accepted,
