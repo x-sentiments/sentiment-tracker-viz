@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ProbabilityChart } from "../../components/ProbabilityChart";
 
 interface Outcome {
   id: string;
@@ -56,7 +57,6 @@ export default function MarketDetailPage({ params }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<string | null>(null);
-  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
 
   useEffect(() => {
     fetchMarketData();
@@ -278,191 +278,11 @@ export default function MarketDetailPage({ params }: Props) {
             No history data yet. Probabilities will appear here as posts are analyzed.
           </div>
         ) : (
-          <div style={{ position: "relative", height: "280px" }}>
-            {/* Interactive SVG chart */}
-            <svg 
-              width="100%" 
-              height="250" 
-              viewBox="0 0 800 250" 
-              preserveAspectRatio="xMidYMid meet"
-              onMouseLeave={() => setHoveredPoint(null)}
-              style={{ overflow: "visible" }}
-            >
-              {/* Grid lines */}
-              <line x1="10" y1="20" x2="10" y2="240" stroke="var(--border-color)" strokeWidth="1" strokeOpacity="0.3" />
-              <line x1="10" y1="130" x2="790" y2="130" stroke="var(--border-color)" strokeWidth="1" strokeOpacity="0.3" strokeDasharray="4" />
-              
-              {/* Lines for each outcome */}
-              {outcomes.map((outcome, oi) => {
-                const points = history.map((snap, i) => {
-                  const x = (i / Math.max(history.length - 1, 1)) * 760 + 30;
-                  const prob = snap.probabilities[outcome.outcome_id] ?? 0;
-                  const y = 230 - prob * 200;
-                  return `${x},${y}`;
-                });
-                return (
-                  <polyline
-                    key={outcome.id}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke={outcomeColors[oi % outcomeColors.length]}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ filter: hoveredPoint !== null ? "opacity(0.4)" : "none" }}
-                  />
-                );
-              })}
-              
-              {/* Highlighted lines when hovering */}
-              {hoveredPoint !== null && outcomes.map((outcome, oi) => {
-                const points = history.map((snap, i) => {
-                  const x = (i / Math.max(history.length - 1, 1)) * 760 + 30;
-                  const prob = snap.probabilities[outcome.outcome_id] ?? 0;
-                  const y = 230 - prob * 200;
-                  return `${x},${y}`;
-                });
-                return (
-                  <polyline
-                    key={`highlight-${outcome.id}`}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke={outcomeColors[oi % outcomeColors.length]}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                );
-              })}
-              
-              {/* Vertical hover line */}
-              {hoveredPoint !== null && (
-                <line
-                  x1={(hoveredPoint / Math.max(history.length - 1, 1)) * 760 + 30}
-                  y1="20"
-                  x2={(hoveredPoint / Math.max(history.length - 1, 1)) * 760 + 30}
-                  y2="230"
-                  stroke="var(--text-muted)"
-                  strokeWidth="1"
-                  strokeDasharray="4"
-                />
-              )}
-              
-              {/* Data points with hover circles */}
-              {history.map((snap, i) => {
-                const x = (i / Math.max(history.length - 1, 1)) * 760 + 30;
-                return (
-                  <g key={i}>
-                    {/* Invisible hover area */}
-                    <rect
-                      x={x - 20}
-                      y={0}
-                      width={40}
-                      height={250}
-                      fill="transparent"
-                      onMouseEnter={() => setHoveredPoint(i)}
-                      style={{ cursor: "crosshair" }}
-                    />
-                    {/* Visible dots when hovered */}
-                    {hoveredPoint === i && outcomes.map((outcome, oi) => {
-                      const prob = snap.probabilities[outcome.outcome_id] ?? 0;
-                      const y = 230 - prob * 200;
-                      return (
-                        <circle
-                          key={`dot-${outcome.id}`}
-                          cx={x}
-                          cy={y}
-                          r={6}
-                          fill={outcomeColors[oi % outcomeColors.length]}
-                          stroke="var(--bg-primary)"
-                          strokeWidth="2"
-                        />
-                      );
-                    })}
-                  </g>
-                );
-              })}
-              
-              {/* X axis */}
-              <line x1="30" y1="230" x2="790" y2="230" stroke="var(--border-color)" strokeWidth="1" />
-              
-              {/* Y axis labels */}
-              <text x="5" y="35" fill="var(--text-muted)" fontSize="11" fontFamily="system-ui">100%</text>
-              <text x="5" y="135" fill="var(--text-muted)" fontSize="11" fontFamily="system-ui">50%</text>
-              <text x="5" y="235" fill="var(--text-muted)" fontSize="11" fontFamily="system-ui">0%</text>
-            </svg>
-            
-            {/* Tooltip */}
-            {hoveredPoint !== null && history[hoveredPoint] && (
-              <div
-                style={{
-                  position: "absolute",
-                  left: `${((hoveredPoint / Math.max(history.length - 1, 1)) * 95) + 2}%`,
-                  top: "10px",
-                  transform: hoveredPoint > history.length / 2 ? "translateX(-100%)" : "translateX(0)",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-                  zIndex: 10,
-                  minWidth: "140px"
-                }}
-              >
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "8px" }}>
-                  {formatDate(history[hoveredPoint].timestamp)}
-                </div>
-                {outcomes.map((outcome, i) => {
-                  const prob = history[hoveredPoint].probabilities[outcome.outcome_id] ?? 0;
-                  return (
-                    <div
-                      key={outcome.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                        marginBottom: "4px"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <div
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            borderRadius: "50%",
-                            background: outcomeColors[i % outcomeColors.length]
-                          }}
-                        />
-                        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                          {outcome.label}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "0.9rem",
-                          fontWeight: 600,
-                          color: outcomeColors[i % outcomeColors.length]
-                        }}
-                      >
-                        {(prob * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* Legend */}
-            <div style={{ display: "flex", gap: "16px", marginTop: "8px", justifyContent: "center" }}>
-              {outcomes.map((outcome, i) => (
-                <div key={outcome.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
-                  <div style={{ width: "12px", height: "12px", borderRadius: "2px", background: outcomeColors[i % outcomeColors.length] }} />
-                  <span style={{ color: "var(--text-secondary)" }}>{outcome.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProbabilityChart
+            outcomes={outcomes}
+            history={history}
+            outcomeColors={outcomeColors}
+          />
         )}
       </div>
 
