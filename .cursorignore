@@ -1,0 +1,39 @@
+.cursorignore works like .gitignore and is additive; keep Cursor focused by excluding build artifacts + deps.
+Learn Cursor
+
+# Dependencies / builds
+node_modules/
+.next/
+dist/
+build/
+coverage/
+out/
+
+# Logs
+*.log
+
+# Local env (never index secrets)
+.env
+.env.*
+!.env.example
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+supabase/.cache/
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Large datasets (if any)
+data/
+tmp/
+
+# Cursor Project Rules (MDC)
+# Naming note: Cursor community guidance suggests .mdc files in .cursor/rules/ with lowercase + hyphens.
+# Cursor - Community Forum
+# Nested rules: you can place .cursor/rules inside apps/web/ and services/ingestion-worker/ etc; nested rules auto-attach when files in that directory are referenced.
+# GitHub
+    

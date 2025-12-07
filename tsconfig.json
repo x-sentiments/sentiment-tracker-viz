@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./apps/web" },
+    { "path": "./packages/shared" },
+    { "path": "./services/ingestion-worker" },
+    { "path": "./services/scoring-worker" }
+  ]
+}
+
