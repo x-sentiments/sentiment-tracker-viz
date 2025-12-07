@@ -76,10 +76,7 @@ export async function POST(req: Request) {
         .eq("market_id", similarMarket.id);
 
       return NextResponse.json({
-        market: {
-          id: similarMarket.id,
-          ...similarMarket
-        },
+        market: similarMarket,
         outcomes: outcomes || [],
         existing: true
       });
