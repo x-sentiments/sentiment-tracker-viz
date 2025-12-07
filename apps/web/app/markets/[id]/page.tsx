@@ -96,7 +96,7 @@ async function fetchServerData(id: string) {
   // Posts (latest 20)
   const { data: posts } = await supabase
     .from("raw_posts")
-    .select("id,text,author_id,author_followers,author_verified,post_created_at")
+    .select("id,text,author_id,author_followers,author_verified,post_created_at,display_labels")
     .eq("market_id", id)
     .order("post_created_at", { ascending: false })
     .limit(20);
