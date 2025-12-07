@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "../../../../src/lib/supabase";
 
+// Force dynamic rendering - don't cache this route
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Params {
   params: Promise<{ id: string }>;
 }
@@ -34,10 +38,18 @@ export async function GET(_req: Request, { params }: Params) {
       throw new Error(outcomesError.message);
     }
 
-    return NextResponse.json({
-      market,
-      outcomes: outcomes || []
-    });
+    return NextResponse.json(
+      {
+        market,
+        outcomes: outcomes || [],
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("Market detail error:", error);
     return NextResponse.json(

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "../../../../../src/lib/supabase";
 
+// Force dynamic rendering - don't cache this route
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Params {
   params: Promise<{ id: string }>;
 }
@@ -28,7 +32,15 @@ export async function GET(req: Request, { params }: Params) {
     }
 
     if (!rawPosts || rawPosts.length === 0) {
-      return NextResponse.json({ market_id: id, posts: [] });
+      return NextResponse.json(
+        { market_id: id, posts: [] },
+        {
+          headers: {
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+          },
+        }
+      );
     }
 
     // Fetch scored posts to get display labels (pick one per raw post)
@@ -64,15 +76,23 @@ export async function GET(req: Request, { params }: Params) {
       display_labels: labelsMap.get(p.id) || null
     }));
 
-    return NextResponse.json({
-      market_id: id,
-      posts,
-      pagination: {
-        limit,
-        offset,
-        count: posts.length
+    return NextResponse.json(
+      {
+        market_id: id,
+        posts,
+        pagination: {
+          limit,
+          offset,
+          count: posts.length,
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
       }
-    });
+    );
   } catch (error) {
     console.error("Market posts error:", error);
     return NextResponse.json(

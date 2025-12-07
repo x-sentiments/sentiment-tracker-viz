@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "../../../src/lib/supabase";
 
+// Force dynamic rendering - don't cache this route
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const supabase = createServiceRoleClient();
@@ -54,7 +58,15 @@ export async function GET() {
     }));
 
     console.log(`[markets] Returning ${result.length} markets`);
-    return NextResponse.json({ markets: result });
+    return NextResponse.json(
+      { markets: result },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      }
+    );
   } catch (error) {
     console.error("Markets list error:", error);
     return NextResponse.json(
