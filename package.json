@@ -8,9 +8,9 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "next dev --turbo --dir apps/web",
-    "build": "next build apps/web",
-    "lint": "next lint apps/web",
+    "dev": "cd apps/web && next dev --turbo",
+    "build": "cd apps/web && next build",
+    "lint": "cd apps/web && next lint",
     "typecheck": "tsc -b"
   },
   "dependencies": {

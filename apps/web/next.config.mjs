@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbo: true
-  }
+  // Turbo mode is enabled via the --turbo CLI flag
 };
 
 export default nextConfig;
