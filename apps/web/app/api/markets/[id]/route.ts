@@ -41,8 +41,10 @@ export async function GET(_req: Request, { params }: Params) {
       .eq("market_id", id)
       .maybeSingle();
 
-    const probabilities: Record<string, number> =
-      state?.probabilities ?? {};
+    const probabilities = (state?.probabilities ?? {}) as Record<
+      string,
+      number
+    >;
 
     return NextResponse.json(
       {
