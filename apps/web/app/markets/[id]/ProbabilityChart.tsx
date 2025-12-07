@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createChart, IChartApi, ISeriesApi, LineSeries, LineData, Time } from "lightweight-charts";
+import { createChart, ColorType, IChartApi, ISeriesApi, LineData, Time } from "lightweight-charts";
 
 interface Outcome {
   id: string;
@@ -32,7 +32,7 @@ export default function ProbabilityChart({ outcomes, history, colors }: Probabil
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: "transparent" },
+        background: { type: ColorType.Solid, color: "transparent" },
         textColor: "rgba(255, 255, 255, 0.6)",
       },
       grid: {
@@ -69,7 +69,7 @@ export default function ProbabilityChart({ outcomes, history, colors }: Probabil
 
     // Create a line series for each outcome
     outcomes.forEach((outcome, index) => {
-      const series = chart.addSeries(LineSeries, {
+      const series = chart.addLineSeries({
         color: colors[index % colors.length],
         lineWidth: 2,
         title: outcome.label,
