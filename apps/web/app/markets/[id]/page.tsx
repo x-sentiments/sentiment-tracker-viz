@@ -52,6 +52,7 @@ export default function MarketDetailPage({ params }: Props) {
   const [market, setMarket] = useState<Market | null>(null);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [history, setHistory] = useState<Snapshot[]>([]);
+  const [currentProbabilities, setCurrentProbabilities] = useState<Record<string, number>>({});
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export default function MarketDetailPage({ params }: Props) {
 
   async function fetchMarketData() {
     try {
-      // Fetch market detail
+      // Fetch market detail (includes current probabilities from market_state)
       const marketRes = await fetch(`/api/markets/${id}`);
       if (!marketRes.ok) {
         setError("Market not found");
@@ -106,6 +107,8 @@ export default function MarketDetailPage({ params }: Props) {
       const marketData = await marketRes.json();
       setMarket(marketData.market);
       setOutcomes(marketData.outcomes || []);
+      // Store current probabilities from market_state (authoritative source)
+      setCurrentProbabilities(marketData.probabilities || {});
 
       // Fetch history
       const historyRes = await fetch(`/api/markets/${id}/history`);
@@ -164,6 +167,45 @@ export default function MarketDetailPage({ params }: Props) {
   function getCurrentProb(outcome: Outcome): number | null {
     return outcome.current_probability;
   }
+
+  // Combine history with current probabilities to ensure chart ends at current values
+  // This guarantees the chart's rightmost point matches the header values
+  const chartHistory: Snapshot[] = (() => {
+    // If no current probabilities, just return history as-is
+    if (Object.keys(currentProbabilities).length === 0) {
+      return history;
+    }
+
+    // Create a "now" snapshot with current probabilities from market_state
+    const nowSnapshot: Snapshot = {
+      timestamp: new Date().toISOString(),
+      probabilities: currentProbabilities,
+    };
+
+    // If no history, return just the current snapshot
+    if (history.length === 0) {
+      return [nowSnapshot];
+    }
+
+    // Check if the last history snapshot matches current probabilities
+    const lastSnapshot = history[history.length - 1];
+    const lastProbs = lastSnapshot.probabilities;
+    const currentProbs = currentProbabilities;
+
+    // Check if they're the same (within floating point tolerance)
+    const areSame = Object.keys(currentProbs).every((key) => {
+      const curr = currentProbs[key];
+      const last = lastProbs[key];
+      return last !== undefined && Math.abs(curr - last) < 0.0001;
+    });
+
+    // If different, append the current snapshot to ensure chart ends at current values
+    if (!areSame) {
+      return [...history, nowSnapshot];
+    }
+
+    return history;
+  })();
 
   if (loading) {
     return (
@@ -268,14 +310,14 @@ export default function MarketDetailPage({ params }: Props) {
       {/* Chart */}
       <div className="chart-container">
         <div className="chart-title">Probability Over Time</div>
-        {history.length === 0 ? (
+        {chartHistory.length === 0 ? (
           <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "48px" }}>
             No history data yet. Probabilities will appear here as posts are analyzed.
           </div>
         ) : (
           <ProbabilityChart
             outcomes={outcomes}
-            history={history}
+            history={chartHistory}
             outcomeColors={outcomeColors}
           />
         )}
