@@ -9,6 +9,9 @@ export async function GET(_req: Request, { params }: Params) {
   try {
     const { id } = await params;
     const supabase = getSupabaseClient();
+    
+    // Debug: Log which Supabase URL is being used
+    console.log("SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 
     // Fetch market
     const { data: market, error: marketError } = await supabase
