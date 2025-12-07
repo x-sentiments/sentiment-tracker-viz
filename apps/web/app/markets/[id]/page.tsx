@@ -56,7 +56,6 @@ interface Post {
   author_followers: number | null;
   author_verified: boolean | null;
   post_created_at: string | null;
-  display_labels: DisplayLabels | null;
 }
 
 async function fetchServerData(id: string) {
@@ -96,7 +95,7 @@ async function fetchServerData(id: string) {
   // Posts (latest 20)
   const { data: posts } = await supabase
     .from("raw_posts")
-    .select("id,text,author_id,author_followers,author_verified,post_created_at,display_labels")
+    .select("id,text,author_id,author_followers,author_verified,post_created_at")
     .eq("market_id", id)
     .order("post_created_at", { ascending: false })
     .limit(20);
@@ -266,31 +265,6 @@ export default async function MarketDetailPage({
                 </span>
                 <span>{formatDate(post.post_created_at)}</span>
               </div>
-              {post.display_labels && (
-                <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  <span
-                    className={`post-label ${
-                      post.display_labels.stance_label.toLowerCase().includes("bullish")
-                        ? "bullish"
-                        : post.display_labels.stance_label.toLowerCase().includes("bearish")
-                        ? "bearish"
-                        : ""
-                    }`}
-                  >
-                    {post.display_labels.stance_label}
-                  </span>
-                  <span
-                    className={`post-label credibility-${post.display_labels.credibility_label.toLowerCase()}`}
-                  >
-                    {post.display_labels.credibility_label} credibility
-                  </span>
-                </div>
-              )}
-              {post.display_labels?.reason && (
-                <p style={{ margin: "12px 0 0", fontSize: "0.9rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
-                  "{post.display_labels.reason}"
-                </p>
-              )}
             </div>
           ))
         )}
