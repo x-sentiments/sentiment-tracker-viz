@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient } from "../../../../../src/lib/supabase";
 
 interface Params {
   params: Promise<{ id: string }>;
