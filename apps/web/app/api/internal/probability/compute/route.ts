@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { probabilityEngineInputSchema } from "@shared/probability/contracts";
+import { probabilityEngineInputSchema } from "@xai/shared/probability/contracts";
 import { computeProbabilities, computeProbabilitiesDirect } from "../../../../src/lib/probabilityAdapter";
 
 const requestSchema = z.object({

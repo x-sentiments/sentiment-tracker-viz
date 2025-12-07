@@ -1,10 +1,10 @@
-import { grokMarketResponseSchema, GrokMarketResponse } from "@shared/llm/grokMarket";
+import { grokMarketResponseSchema, GrokMarketResponse } from "@xai/shared/llm/grokMarket";
 import {
   grokScoreBatchResponseSchema,
   GrokScoreBatchResponse,
   GrokScoringRequest
-} from "@shared/llm/grokScoring";
-import { grokLabelBatchResponseSchema, GrokLabelBatchResponse } from "@shared/llm/grokLabels";
+} from "@xai/shared/llm/grokScoring";
+import { grokLabelBatchResponseSchema, GrokLabelBatchResponse } from "@xai/shared/llm/grokLabels";
 
 const GROK_BASE_URL = process.env.GROK_BASE_URL || "https://api.x.ai/v1";
 const GROK_API_KEY = process.env.GROK_API_KEY;
