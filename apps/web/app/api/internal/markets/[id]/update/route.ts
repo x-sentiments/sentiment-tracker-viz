@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { computeProbabilities } from "../../../../../src/lib/probabilityAdapter";
+import { computeProbabilities } from "../../../../../../src/lib/probabilityAdapter";
 
 interface Params {
   params: Promise<{ id: string }>;
