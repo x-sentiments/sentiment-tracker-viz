@@ -1,7 +1,27 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
+
+// Dynamic import for chart component to ensure client-side only rendering
+const ProbabilityChart = dynamic(() => import("./ProbabilityChart"), {
+  ssr: false,
+  loading: () => (
+    <div style={{ 
+      height: "400px", 
+      display: "flex", 
+      alignItems: "center", 
+      justifyContent: "center",
+      background: "rgba(17, 24, 39, 0.6)",
+      borderRadius: "16px",
+      border: "1px solid rgba(255,255,255,0.08)"
+    }}>
+      <div style={{ color: "var(--text-muted)" }}>Loading chart...</div>
+    </div>
+  )
+});
 
 interface Outcome {
   id: string;
@@ -18,6 +38,11 @@ interface Market {
   status: string;
   created_at: string;
   total_posts_processed: number | null;
+  resolution_date: string | null;
+  resolution_reason: string | null;
+  resolved_outcome_id: string | null;
+  resolution_source: string | null;
+  stream_active: boolean;
 }
 
 interface Snapshot {
@@ -42,12 +67,9 @@ interface Post {
   display_labels: DisplayLabels | null;
 }
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
-
-export default function MarketDetailPage({ params }: Props) {
-  const { id } = use(params);
+export default function MarketDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [market, setMarket] = useState<Market | null>(null);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [history, setHistory] = useState<Snapshot[]>([]);
@@ -115,14 +137,17 @@ export default function MarketDetailPage({ params }: Props) {
     return count.toString();
   }
 
-  // Color palette for outcomes
+  // Color palette for outcomes (hex for chart library)
   const outcomeColors = [
-    "var(--accent-green)",
-    "var(--accent-blue)",
-    "var(--accent-purple)",
-    "var(--accent-orange)",
-    "var(--accent-red)"
+    "#22c55e", // green
+    "#3b82f6", // blue
+    "#a855f7", // purple
+    "#f97316", // orange
+    "#ef4444", // red
+    "#06b6d4", // cyan
+    "#eab308", // yellow
   ];
+
 
   if (loading) {
     return (
@@ -168,6 +193,102 @@ export default function MarketDetailPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Resolution Status Panel */}
+      {(market.status === "resolved" || market.resolution_date || market.resolved_outcome_id) && (
+        <div style={{
+          background: market.status === "resolved" 
+            ? "linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05))"
+            : "linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05))",
+          border: market.status === "resolved"
+            ? "1px solid rgba(34, 197, 94, 0.3)"
+            : "1px solid rgba(59, 130, 246, 0.3)",
+          borderRadius: "16px",
+          padding: "20px 24px",
+          marginBottom: "24px"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "1.5rem" }}>
+              {market.status === "resolved" ? "✅" : "⏳"}
+            </span>
+            <h3 style={{ margin: 0, fontSize: "1.1rem" }}>
+              {market.status === "resolved" ? "Market Resolved" : "Resolution Info"}
+            </h3>
+          </div>
+          
+          {market.status === "resolved" && market.resolved_outcome_id && (
+            <div style={{ 
+              background: "rgba(34, 197, 94, 0.2)", 
+              borderRadius: "12px", 
+              padding: "16px",
+              marginBottom: "12px"
+            }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                Winning Outcome
+              </div>
+              <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "#22c55e" }}>
+                {outcomes.find(o => o.outcome_id === market.resolved_outcome_id)?.label || market.resolved_outcome_id}
+              </div>
+              {market.resolution_source && (
+                <div style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  Source: {market.resolution_source}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {market.resolution_date && market.status !== "resolved" && (
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "16px"
+            }}>
+              <div>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                  Expected Resolution
+                </div>
+                <div style={{ fontWeight: 500 }}>
+                  {new Date(market.resolution_date).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric"
+                  })}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                  Stream Status
+                </div>
+                <div style={{ 
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 12px",
+                  borderRadius: "20px",
+                  background: market.stream_active ? "rgba(34, 197, 94, 0.2)" : "rgba(156, 163, 175, 0.2)",
+                  fontSize: "0.9rem"
+                }}>
+                  <span style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: market.stream_active ? "#22c55e" : "#9ca3af",
+                    animation: market.stream_active ? "pulse 2s infinite" : "none"
+                  }} />
+                  {market.stream_active ? "Monitoring X" : "Stream Stopped"}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {market.resolution_reason && (
+            <div style={{ marginTop: "12px", fontSize: "0.9rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+              "{market.resolution_reason}"
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Outcome Cards */}
       <div className="outcomes-grid">
         {outcomes.map((outcome, i) => (
@@ -188,54 +309,29 @@ export default function MarketDetailPage({ params }: Props) {
       </div>
 
       {/* Chart */}
-      <div className="chart-container">
-        <div className="chart-title">Probability Over Time</div>
-        {history.length === 0 ? (
-          <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "48px" }}>
+      {history.length > 0 ? (
+        <ProbabilityChart history={history} outcomes={outcomes} />
+      ) : (
+        <div className="chart-container" style={{ 
+          background: "rgba(17, 24, 39, 0.6)", 
+          borderRadius: "16px", 
+          padding: "24px", 
+          border: "1px solid rgba(255,255,255,0.08)" 
+        }}>
+          <div className="chart-title" style={{ marginBottom: "16px" }}>Probability Over Time</div>
+          <div style={{ 
+            color: "var(--text-muted)", 
+            textAlign: "center", 
+            padding: "80px 24px",
+            background: "rgba(255,255,255,0.02)",
+            borderRadius: "12px",
+            border: "1px dashed rgba(255,255,255,0.1)"
+          }}>
+            <div style={{ fontSize: "2rem", marginBottom: "12px", opacity: 0.5 }}>📈</div>
             No history data yet. Probabilities will appear here as posts are analyzed.
           </div>
-        ) : (
-          <div style={{ position: "relative", height: "250px" }}>
-            {/* Simple SVG chart */}
-            <svg width="100%" height="100%" viewBox="0 0 800 250" preserveAspectRatio="none">
-              {outcomes.map((outcome, oi) => {
-                const points = history.map((snap, i) => {
-                  const x = (i / Math.max(history.length - 1, 1)) * 780 + 10;
-                  const prob = snap.probabilities[outcome.outcome_id] ?? 0;
-                  const y = 240 - prob * 220;
-                  return `${x},${y}`;
-                });
-                return (
-                  <polyline
-                    key={outcome.id}
-                    points={points.join(" ")}
-                    fill="none"
-                    stroke={outcomeColors[oi % outcomeColors.length]}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                );
-              })}
-              {/* X axis */}
-              <line x1="10" y1="240" x2="790" y2="240" stroke="var(--border-color)" strokeWidth="1" />
-              {/* Y axis labels */}
-              <text x="5" y="25" fill="var(--text-muted)" fontSize="10">100%</text>
-              <text x="5" y="130" fill="var(--text-muted)" fontSize="10">50%</text>
-              <text x="5" y="238" fill="var(--text-muted)" fontSize="10">0%</text>
-            </svg>
-            {/* Legend */}
-            <div style={{ display: "flex", gap: "16px", marginTop: "12px", justifyContent: "center" }}>
-              {outcomes.map((outcome, i) => (
-                <div key={outcome.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem" }}>
-                  <div style={{ width: "12px", height: "12px", borderRadius: "2px", background: outcomeColors[i % outcomeColors.length] }} />
-                  <span style={{ color: "var(--text-secondary)" }}>{outcome.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Curated Posts */}
       <div className="posts-section">
