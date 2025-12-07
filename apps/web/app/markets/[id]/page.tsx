@@ -66,23 +66,25 @@ export default function MarketDetailPage({ params }: Props) {
     if (refreshing) return;
     
     setRefreshing(true);
-    setRefreshStatus("Fetching tweets...");
+    setRefreshStatus("Running cron refresh...");
     
     try {
-      const res = await fetch(`/api/markets/${id}/refresh`, { method: "POST" });
+      // Hit the cron endpoint to refresh all markets (for testing)
+      const res = await fetch(`/api/cron/refresh-markets`, { method: "POST" });
       const data = await res.json();
       
       if (res.ok) {
         const parts = [];
-        if (data.tweets_ingested > 0) parts.push(`${data.tweets_ingested} new tweets`);
-        if (data.posts_scored > 0) parts.push(`${data.posts_scored} scored`);
+        if (data.total_tweets_fetched > 0) parts.push(`${data.total_tweets_fetched} tweets`);
+        if (data.total_posts_scored > 0) parts.push(`${data.total_posts_scored} scored`);
+        if (data.markets_processed > 0) parts.push(`${data.markets_processed} markets`);
         
         setRefreshStatus(parts.length > 0 ? `✓ ${parts.join(", ")}` : "✓ Up to date");
         
         // Reload market data
         await fetchMarketData();
       } else {
-        setRefreshStatus(`⚠ ${data.error?.message || "Refresh failed"}`);
+        setRefreshStatus(`⚠ ${data.errors?.[0] || data.error || "Refresh failed"}`);
       }
     } catch (e) {
       setRefreshStatus("⚠ Refresh failed");
