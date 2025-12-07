@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 
 interface Outcome {
@@ -42,12 +43,9 @@ interface Post {
   display_labels: DisplayLabels | null;
 }
 
-interface Props {
-  params: Promise<{ id: string }>;
-}
-
-export default function MarketDetailPage({ params }: Props) {
-  const { id } = use(params);
+export default function MarketDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [market, setMarket] = useState<Market | null>(null);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [history, setHistory] = useState<Snapshot[]>([]);
