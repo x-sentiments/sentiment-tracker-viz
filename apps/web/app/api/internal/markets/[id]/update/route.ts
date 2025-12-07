@@ -6,7 +6,9 @@ interface Params {
 }
 
 function assertSecret(req: Request) {
-  const secret = req.headers.get("x-internal-secret") ?? req.headers.get("x_internal_secret");
+  const secret =
+    req.headers.get("x-internal-secret") ??
+    req.headers.get("x_internal_secret");
   if (!secret || secret !== process.env.INTERNAL_WEBHOOK_SECRET) {
     throw new Error("Unauthorized");
   }
@@ -30,7 +32,7 @@ export async function POST(req: Request, { params }: Params) {
       market_id: id,
       probabilities: result.probabilities,
       algorithm: result.algorithm,
-      notes: result.notes
+      notes: result.notes,
     });
   } catch (error) {
     console.error("Market update error:", error);
@@ -38,8 +40,8 @@ export async function POST(req: Request, { params }: Params) {
       {
         error: {
           code: "UPDATE_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error"
-        }
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
       },
       { status: 400 }
     );

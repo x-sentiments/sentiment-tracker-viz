@@ -20,18 +20,20 @@ const postSchema = z.object({
       likes: z.number().optional(),
       reposts: z.number().optional(),
       replies: z.number().optional(),
-      quotes: z.number().optional()
+      quotes: z.number().optional(),
     })
-    .optional()
+    .optional(),
 });
 
 const ingestSchema = z.object({
   market_id: z.string(),
-  posts: z.array(postSchema)
+  posts: z.array(postSchema),
 });
 
 function assertSecret(req: Request) {
-  const secret = req.headers.get("x-internal-secret") ?? req.headers.get("x_internal_secret");
+  const secret =
+    req.headers.get("x-internal-secret") ??
+    req.headers.get("x_internal_secret");
   if (!secret || secret !== process.env.INTERNAL_WEBHOOK_SECRET) {
     throw new Error("Unauthorized");
   }
@@ -60,7 +62,7 @@ export async function POST(req: Request) {
     const results = {
       accepted: 0,
       skipped: 0,
-      errors: [] as string[]
+      errors: [] as string[],
     };
 
     for (const post of payload.posts) {
@@ -80,16 +82,14 @@ export async function POST(req: Request) {
           author_created_at: toISOString(post.author_created_at),
           metrics: post.metrics ?? null,
           features,
-          is_active: true
+          is_active: true,
         };
 
         // Upsert to handle idempotency (on conflict with x_post_id + market_id)
-        const { error } = await supabase
-          .from("raw_posts")
-          .upsert(row, {
-            onConflict: "x_post_id,market_id",
-            ignoreDuplicates: true
-          });
+        const { error } = await supabase.from("raw_posts").upsert(row, {
+          onConflict: "x_post_id,market_id",
+          ignoreDuplicates: true,
+        });
 
         if (error) {
           results.errors.push(`${post.x_post_id}: ${error.message}`);
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
       status: "processed",
       accepted: results.accepted,
       skipped: results.skipped,
-      errors: results.errors.length > 0 ? results.errors : undefined
+      errors: results.errors.length > 0 ? results.errors : undefined,
     });
   } catch (error) {
     console.error("Ingest error:", error);
@@ -113,8 +113,8 @@ export async function POST(req: Request) {
       {
         error: {
           code: "INGEST_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error"
-        }
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
       },
       { status: 400 }
     );

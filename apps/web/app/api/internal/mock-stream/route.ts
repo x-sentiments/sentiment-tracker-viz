@@ -5,7 +5,7 @@ import { extractPostFeatures } from "../../../../src/lib/grokClient";
 
 const mockStreamSchema = z.object({
   market_id: z.string().uuid(),
-  count: z.number().int().min(1).max(50).default(5)
+  count: z.number().int().min(1).max(50).default(5),
 });
 
 // Sample mock posts for testing
@@ -13,57 +13,59 @@ const MOCK_POSTS = [
   {
     text: "Latest polls show Trump leading in key swing states. This could be significant for 2028.",
     author_followers: 125000,
-    author_verified: true
+    author_verified: true,
   },
   {
     text: "Kamala Harris gaining momentum with younger voters according to new data 📊",
     author_followers: 45000,
-    author_verified: false
+    author_verified: false,
   },
   {
     text: "Breaking: Major endorsement coming this week that could shift the race dramatically",
     author_followers: 890000,
-    author_verified: true
+    author_verified: true,
   },
   {
     text: "I think we're going to see a surprise candidate emerge. Mark my words! 🔮",
     author_followers: 2500,
-    author_verified: false
+    author_verified: false,
   },
   {
     text: "Political analysts are split 50/50 on this one. Too early to call.",
     author_followers: 78000,
-    author_verified: true
+    author_verified: true,
   },
   {
     text: "The economy will be the deciding factor. People vote with their wallets.",
     author_followers: 15000,
-    author_verified: false
+    author_verified: false,
   },
   {
     text: "Don't trust the polls - they were wrong before and they'll be wrong again!",
     author_followers: 3200,
-    author_verified: false
+    author_verified: false,
   },
   {
     text: "Just heard from a reliable source that campaign internals look very different from public polls",
     author_followers: 560000,
-    author_verified: true
+    author_verified: true,
   },
   {
     text: "This election is going to come down to turnout. Simple as that.",
     author_followers: 22000,
-    author_verified: false
+    author_verified: false,
   },
   {
     text: "My prediction: we won't know the winner until days after the election 🗳️",
     author_followers: 8900,
-    author_verified: false
-  }
+    author_verified: false,
+  },
 ];
 
 function assertSecret(req: Request) {
-  const secret = req.headers.get("x-internal-secret") ?? req.headers.get("x_internal_secret");
+  const secret =
+    req.headers.get("x-internal-secret") ??
+    req.headers.get("x_internal_secret");
   if (!secret || secret !== process.env.INTERNAL_WEBHOOK_SECRET) {
     throw new Error("Unauthorized");
   }
@@ -101,7 +103,9 @@ export async function POST(req: Request) {
 
       postsToInsert.push({
         market_id,
-        x_post_id: `mock_${now}_${i}_${Math.random().toString(36).substring(7)}`,
+        x_post_id: `mock_${now}_${i}_${Math.random()
+          .toString(36)
+          .substring(7)}`,
         text: mockPost.text,
         post_created_at: new Date(now - jitter).toISOString(),
         author_id: `mock_author_${i}`,
@@ -112,10 +116,10 @@ export async function POST(req: Request) {
           likes: Math.floor(Math.random() * 100),
           reposts: Math.floor(Math.random() * 20),
           replies: Math.floor(Math.random() * 15),
-          quotes: Math.floor(Math.random() * 5)
+          quotes: Math.floor(Math.random() * 5),
         },
         features: extractPostFeatures(mockPost.text),
-        is_active: true
+        is_active: true,
       });
     }
 
@@ -132,7 +136,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       status: "created",
       count: inserted?.length || 0,
-      message: `Created ${inserted?.length || 0} mock posts for market ${market_id}`
+      message: `Created ${
+        inserted?.length || 0
+      } mock posts for market ${market_id}`,
     });
   } catch (error) {
     console.error("Mock stream error:", error);
@@ -140,8 +146,8 @@ export async function POST(req: Request) {
       {
         error: {
           code: "MOCK_ERROR",
-          message: error instanceof Error ? error.message : "Unknown error"
-        }
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
       },
       { status: 400 }
     );
