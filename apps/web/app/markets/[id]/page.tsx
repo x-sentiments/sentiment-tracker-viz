@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+// NOTE: This file was converted to a Server Component style fetch-and-render
+// to avoid client-side loading stalls. The ProbabilityChart remains a client
+// component, imported dynamically to avoid SSR issues.
+
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { getSupabaseClient } from "../../../src/lib/supabase";
+
+export const revalidate = 0;
 
 // Dynamic import to avoid SSR issues with lightweight-charts
 const ProbabilityChart = dynamic(() => import("./ProbabilityChart"), {
@@ -54,57 +59,80 @@ interface Post {
   display_labels: DisplayLabels | null;
 }
 
-export default function MarketDetailPage() {
-  const params = useParams();
-  const id = params.id as string;
-  const [market, setMarket] = useState<Market | null>(null);
-  const [outcomes, setOutcomes] = useState<Outcome[]>([]);
-  const [probabilities, setProbabilities] = useState<Record<string, number>>(
-    {}
-  );
-  const [history, setHistory] = useState<Snapshot[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchServerData(id: string) {
+  const supabase = getSupabaseClient();
 
-  useEffect(() => {
-    fetchMarketData();
-  }, [id]);
+  // Market
+  const { data: market, error: marketError } = await supabase
+    .from("markets")
+    .select("*")
+    .eq("id", id)
+    .single();
 
-  async function fetchMarketData() {
-    try {
-      // Fetch market detail
-      const marketRes = await fetch(`/api/markets/${id}`);
-      if (!marketRes.ok) {
-        setError("Market not found");
-        setLoading(false);
-        return;
-      }
-      const marketData = await marketRes.json();
-      setMarket(marketData.market);
-      setOutcomes(marketData.outcomes || []);
-      setProbabilities(marketData.probabilities || {});
-
-      // Fetch history
-      const historyRes = await fetch(`/api/markets/${id}/history`);
-      if (historyRes.ok) {
-        const historyData = await historyRes.json();
-        setHistory(historyData.snapshots || []);
-      }
-
-      // Fetch posts
-      const postsRes = await fetch(`/api/markets/${id}/posts`);
-      if (postsRes.ok) {
-        const postsData = await postsRes.json();
-        setPosts(postsData.posts || []);
-      }
-    } catch (e) {
-      console.error("Failed to fetch market data:", e);
-      setError("Failed to load market");
-    } finally {
-      setLoading(false);
-    }
+  if (marketError || !market) {
+    return { error: "Market not found" };
   }
+
+  // Outcomes
+  const { data: outcomes } = await supabase
+    .from("outcomes")
+    .select("*")
+    .eq("market_id", id);
+
+  // Market state probabilities
+  const { data: state } = await supabase
+    .from("market_state")
+    .select("probabilities")
+    .eq("market_id", id)
+    .maybeSingle();
+
+  // History
+  const { data: snapshots } = await supabase
+    .from("probability_snapshots")
+    .select("timestamp,probabilities")
+    .eq("market_id", id)
+    .order("timestamp", { ascending: true });
+
+  // Posts (latest 20)
+  const { data: posts } = await supabase
+    .from("raw_posts")
+    .select("id,text,author_id,author_followers,author_verified,post_created_at")
+    .eq("market_id", id)
+    .order("post_created_at", { ascending: false })
+    .limit(20);
+
+  return {
+    market,
+    outcomes: outcomes || [],
+    probabilities: (state?.probabilities as Record<string, number>) ?? {},
+    snapshots: snapshots || [],
+    posts: posts || [],
+  };
+}
+
+export default async function MarketDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const id = params.id;
+  const result = await fetchServerData(id);
+
+  if ("error" in result) {
+    return (
+      <main className="container" style={{ padding: "32px 24px" }}>
+        <div className="empty-state">
+          <div className="empty-state-icon">❌</div>
+          <p>{result.error}</p>
+          <Link href="/markets" style={{ color: "var(--accent-blue)" }}>
+            ← Back to markets
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  const { market, outcomes, probabilities, snapshots, posts } = result;
 
   function formatProb(prob: number | null): string {
     if (prob === null || prob === undefined) return "—";
