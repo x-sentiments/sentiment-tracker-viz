@@ -59,6 +59,9 @@ export default function MarketDetailPage() {
   const id = params.id as string;
   const [market, setMarket] = useState<Market | null>(null);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
+  const [probabilities, setProbabilities] = useState<Record<string, number>>(
+    {}
+  );
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,7 @@ export default function MarketDetailPage() {
       const marketData = await marketRes.json();
       setMarket(marketData.market);
       setOutcomes(marketData.outcomes || []);
+      setProbabilities(marketData.probabilities || {});
 
       // Fetch history
       const historyRes = await fetch(`/api/markets/${id}/history`);
@@ -190,7 +194,10 @@ export default function MarketDetailPage() {
               className="outcome-card-prob"
               style={{ color: outcomeColors[i % outcomeColors.length] }}
             >
-              {formatProb(outcome.current_probability)}
+              {formatProb(
+                probabilities[outcome.outcome_id] ??
+                  outcome.current_probability
+              )}
             </div>
           </div>
         ))}

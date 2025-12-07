@@ -26,8 +26,10 @@ export async function GET() {
         current_probability: number | null;
       }>
     > = {};
+    let stateMap: Record<string, Record<string, number>> = {};
 
     if (marketIds.length > 0) {
+      // Outcomes
       const { data: outcomes, error: outcomesError } = await supabase
         .from("outcomes")
         .select("market_id, outcome_id, label, current_probability")
@@ -45,13 +47,34 @@ export async function GET() {
           });
         }
       }
+
+      // Market state (latest probabilities)
+      const { data: states } = await supabase
+        .from("market_state")
+        .select("market_id, probabilities")
+        .in("market_id", marketIds);
+
+      if (states) {
+        for (const s of states) {
+          stateMap[s.market_id] = (s as any).probabilities ?? {};
+        }
+      }
     }
 
-    // Combine markets with their outcomes
-    const result = (markets || []).map((m) => ({
-      ...m,
-      outcomes: outcomesMap[m.id] || [],
-    }));
+    // Combine markets with their outcomes and resolved probabilities
+    const result = (markets || []).map((m) => {
+      const probs = stateMap[m.id] || {};
+      const outs = (outcomesMap[m.id] || []).map((o) => ({
+        ...o,
+        current_probability:
+          probs[o.outcome_id] ?? o.current_probability ?? null,
+      }));
+      return {
+        ...m,
+        probabilities: probs,
+        outcomes: outs,
+      };
+    });
 
     return NextResponse.json(
       { markets: result },

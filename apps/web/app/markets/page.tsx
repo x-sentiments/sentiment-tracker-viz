@@ -17,6 +17,7 @@ interface Market {
   created_at: string;
   total_posts_processed: number | null;
   outcomes: Outcome[];
+  probabilities?: Record<string, number>;
 }
 
 export default function MarketsPage() {
@@ -94,10 +95,17 @@ export default function MarketsPage() {
                       <span className="outcome-label">{outcome.label}</span>
                       <span
                         className={`outcome-prob ${
-                          (outcome.current_probability ?? 0) > 0.5 ? "positive" : ""
+                          ((market.probabilities?.[outcome.outcome_id] ??
+                            outcome.current_probability ??
+                            0) > 0.5
+                            ? "positive"
+                            : "")
                         }`}
                       >
-                        {formatProb(outcome.current_probability)}
+                        {formatProb(
+                          market.probabilities?.[outcome.outcome_id] ??
+                            outcome.current_probability
+                        )}
                       </span>
                     </div>
                   ))}

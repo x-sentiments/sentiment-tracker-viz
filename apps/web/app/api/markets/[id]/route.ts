@@ -34,8 +34,23 @@ export async function GET(_req: Request, { params }: Params) {
       throw new Error(outcomesError.message);
     }
 
+    // Fetch latest market state probabilities
+    const { data: state } = await supabase
+      .from("market_state")
+      .select("probabilities, updated_at")
+      .eq("market_id", id)
+      .maybeSingle();
+
+    const probabilities: Record<string, number> =
+      state?.probabilities ?? {};
+
     return NextResponse.json(
-      { market, outcomes: outcomes || [] },
+      {
+        market,
+        outcomes: outcomes || [],
+        probabilities,
+        updated_at: state?.updated_at ?? null,
+      },
       {
         headers: {
           "Cache-Control": "no-store, max-age=0",
