@@ -181,23 +181,12 @@ export default async function MarketDetailPage({
         })
       : outcomes;
 
-  if (loading) {
-    return (
-      <main className="container" style={{ padding: "32px 24px" }}>
-        <div className="loading">
-          <div className="spinner" />
-          Loading market...
-        </div>
-      </main>
-    );
-  }
-
-  if (error || !market) {
+  if (!market) {
     return (
       <main className="container" style={{ padding: "32px 24px" }}>
         <div className="empty-state">
           <div className="empty-state-icon">❌</div>
-          <p>{error || "Market not found"}</p>
+          <p>Market not found</p>
           <Link href="/markets" style={{ color: "var(--accent-blue)" }}>
             ← Back to markets
           </Link>
