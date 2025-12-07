@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ProbabilityChart } from "../../components/ProbabilityChart";
 
@@ -43,12 +44,9 @@ interface Post {
   display_labels: DisplayLabels | null;
 }
 
-interface Props {
-  params: { id: string };
-}
-
-export default function MarketDetailPage({ params }: Props) {
-  const { id } = params;
+export default function MarketDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [market, setMarket] = useState<Market | null>(null);
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [history, setHistory] = useState<Snapshot[]>([]);
@@ -171,40 +169,52 @@ export default function MarketDetailPage({ params }: Props) {
   // Combine history with current probabilities to ensure chart ends at current values
   // This guarantees the chart's rightmost point matches the header values
   const chartHistory: Snapshot[] = (() => {
-    // If no current probabilities, just return history as-is
-    if (Object.keys(currentProbabilities).length === 0) {
+    try {
+      // If no current probabilities, just return history as-is
+      if (!currentProbabilities || Object.keys(currentProbabilities).length === 0) {
+        return history;
+      }
+
+      // Create a "now" snapshot with current probabilities from market_state
+      const nowSnapshot: Snapshot = {
+        timestamp: new Date().toISOString(),
+        probabilities: currentProbabilities,
+      };
+
+      // If no history, return just the current snapshot
+      if (!history || history.length === 0) {
+        return [nowSnapshot];
+      }
+
+      // Check if the last history snapshot matches current probabilities
+      const lastSnapshot = history[history.length - 1];
+      const lastProbs = lastSnapshot?.probabilities;
+
+      // If last snapshot has no probabilities, append current
+      if (!lastProbs || typeof lastProbs !== "object") {
+        return [...history, nowSnapshot];
+      }
+
+      const currentProbs = currentProbabilities;
+
+      // Check if they're the same (within floating point tolerance)
+      const areSame = Object.keys(currentProbs).every((key) => {
+        const curr = currentProbs[key];
+        const last = lastProbs[key];
+        if (last === undefined || last === null) return false;
+        return Math.abs(curr - last) < 0.0001;
+      });
+
+      // If different, append the current snapshot to ensure chart ends at current values
+      if (!areSame) {
+        return [...history, nowSnapshot];
+      }
+
+      return history;
+    } catch (e) {
+      console.error("Error computing chartHistory:", e);
       return history;
     }
-
-    // Create a "now" snapshot with current probabilities from market_state
-    const nowSnapshot: Snapshot = {
-      timestamp: new Date().toISOString(),
-      probabilities: currentProbabilities,
-    };
-
-    // If no history, return just the current snapshot
-    if (history.length === 0) {
-      return [nowSnapshot];
-    }
-
-    // Check if the last history snapshot matches current probabilities
-    const lastSnapshot = history[history.length - 1];
-    const lastProbs = lastSnapshot.probabilities;
-    const currentProbs = currentProbabilities;
-
-    // Check if they're the same (within floating point tolerance)
-    const areSame = Object.keys(currentProbs).every((key) => {
-      const curr = currentProbs[key];
-      const last = lastProbs[key];
-      return last !== undefined && Math.abs(curr - last) < 0.0001;
-    });
-
-    // If different, append the current snapshot to ensure chart ends at current values
-    if (!areSame) {
-      return [...history, nowSnapshot];
-    }
-
-    return history;
   })();
 
   if (loading) {
