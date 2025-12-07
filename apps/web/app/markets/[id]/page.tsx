@@ -133,6 +133,7 @@ export default async function MarketDetailPage({
   }
 
   const { market, outcomes, probabilities, snapshots, posts } = result;
+  const historySnapshots = snapshots as Snapshot[];
 
   function formatProb(prob: number | null): string {
     if (prob === null || prob === undefined) return "—";
@@ -241,7 +242,7 @@ export default async function MarketDetailPage({
         <div className="chart-title">Probability Over Time</div>
         <ProbabilityChart 
           outcomes={outcomes} 
-          history={history} 
+          history={historySnapshots} 
           colors={outcomeColors} 
         />
       </div>
