@@ -27,6 +27,7 @@ export default function ProbabilityChart({ outcomes, history, currentProbabiliti
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
 
+  // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
@@ -107,48 +108,75 @@ export default function ProbabilityChart({ outcomes, history, currentProbabiliti
     // If no history and no current data, do nothing
     if (history.length === 0 && (!currentProbabilities || Object.keys(currentProbabilities).length === 0)) return;
 
-    // Prepare data for each outcome
-    outcomes.forEach((outcome) => {
-      const series = seriesRef.current.get(outcome.outcome_id);
-      if (!series) return;
+    try {
+      // Prepare data for each outcome
+      outcomes.forEach((outcome) => {
+        const series = seriesRef.current.get(outcome.outcome_id);
+        if (!series) return;
 
-      // Map history to points
-      const data: LineData<Time>[] = history
-        .map((snapshot) => ({
-          time: (Math.floor(new Date(snapshot.timestamp).getTime() / 1000)) as Time,
-          value: snapshot.probabilities[outcome.outcome_id] ?? 0,
-        }))
-        .sort((a, b) => (a.time as number) - (b.time as number));
-      
-      // If we have current probabilities, append a "now" point
-      // Only append if it's newer than the last history point
-      if (currentProbabilities && typeof currentProbabilities[outcome.outcome_id] === "number") {
-        const nowTimeVal = Math.floor(Date.now() / 1000);
-        const nowTime = nowTimeVal as Time;
-        const lastTime = data.length > 0 ? (data[data.length - 1].time as number) : 0;
-        
-        // Ensure strictly ascending time (Graph will error if not)
-        if (nowTimeVal > lastTime) {
-          data.push({
-            time: nowTime,
-            value: currentProbabilities[outcome.outcome_id],
-          });
-        } else if (data.length > 0) {
-            // Update the last point if it's essentially "now"
-            data[data.length - 1].value = currentProbabilities[outcome.outcome_id];
+        // Map history to points
+        let rawData = history
+          .map((snapshot) => {
+             const time = Math.floor(new Date(snapshot.timestamp).getTime() / 1000) as Time;
+             return {
+               time,
+               value: snapshot.probabilities[outcome.outcome_id] ?? 0,
+             };
+          })
+          .filter(d => !isNaN(d.time as number)) // Filter out invalid dates
+          .sort((a, b) => (a.time as number) - (b.time as number));
+
+        // Deduplicate: If multiple points have same time, keep the last one
+        const uniqueData: LineData<Time>[] = [];
+        if (rawData.length > 0) {
+          uniqueData.push(rawData[0]);
+          for (let i = 1; i < rawData.length; i++) {
+            const prev = uniqueData[uniqueData.length - 1];
+            const curr = rawData[i];
+            if ((curr.time as number) === (prev.time as number)) {
+              // Replace previous with current (latest wins)
+              uniqueData[uniqueData.length - 1] = curr;
+            } else {
+              uniqueData.push(curr);
+            }
+          }
         }
-      }
+        
+        // If we have current probabilities, append a "now" point
+        if (currentProbabilities && typeof currentProbabilities[outcome.outcome_id] === "number") {
+          const nowTimeVal = Math.floor(Date.now() / 1000);
+          const nowTime = nowTimeVal as Time;
+          const lastTime = uniqueData.length > 0 ? (uniqueData[uniqueData.length - 1].time as number) : 0;
+          
+          // Ensure strictly ascending time
+          if (nowTimeVal > lastTime) {
+            uniqueData.push({
+              time: nowTime,
+              value: currentProbabilities[outcome.outcome_id],
+            });
+          } else if (uniqueData.length > 0) {
+              // Update the last point if it's essentially "now"
+              uniqueData[uniqueData.length - 1].value = currentProbabilities[outcome.outcome_id];
+          }
+        }
 
-      if (data.length > 0) {
-        series.setData(data);
-      }
-    });
+        if (uniqueData.length > 0) {
+          series.setData(uniqueData);
+        }
+      });
 
-    // Fit content
-    chartRef.current.timeScale().fitContent();
+      // Fit content
+      chartRef.current.timeScale().fitContent();
+    } catch (err) {
+      console.error("Error updating chart data:", err);
+    }
   }, [history, outcomes, currentProbabilities]);
 
-  if (history.length === 0 && (!currentProbabilities || Object.keys(currentProbabilities || {}).length === 0)) {
+  // Safe check for empty data
+  const hasHistory = history.length > 0;
+  const hasCurrent = currentProbabilities && Object.keys(currentProbabilities || {}).length > 0;
+
+  if (!hasHistory && !hasCurrent) {
     return (
       <div style={{ 
         color: "var(--text-muted)", 
