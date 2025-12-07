@@ -28,7 +28,7 @@ function transformToPostInput(
     stance: number;
     strength: number;
     credibility: number;
-    confidence?: number;
+    confidence: number;
   }> = {};
 
   for (const sp of scoredPosts) {
