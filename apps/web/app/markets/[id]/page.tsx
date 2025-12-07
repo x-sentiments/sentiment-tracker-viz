@@ -137,6 +137,22 @@ export default function MarketDetailPage() {
     "#ef4444", // red
   ];
 
+  const displayOutcomes =
+    Object.keys(probabilities || {}).length > 0
+      ? Object.keys(probabilities).map((oid) => {
+          const match = outcomes.find((o) => o.outcome_id === oid);
+          return (
+            match || {
+              id: oid,
+              outcome_id: oid,
+              label: oid,
+              current_probability: probabilities[oid],
+              prior_probability: null,
+            }
+          );
+        })
+      : outcomes;
+
   if (loading) {
     return (
       <main className="container" style={{ padding: "32px 24px" }}>
@@ -183,7 +199,7 @@ export default function MarketDetailPage() {
 
       {/* Outcome Cards */}
       <div className="outcomes-grid">
-        {outcomes.map((outcome, i) => (
+        {displayOutcomes.map((outcome, i) => (
           <div
             key={outcome.id}
             className="outcome-card"

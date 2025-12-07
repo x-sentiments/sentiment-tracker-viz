@@ -90,7 +90,22 @@ export default function MarketsPage() {
                   {market.normalized_question || market.question}
                 </h3>
                 <div className="market-outcomes">
-                  {market.outcomes.map((outcome) => (
+                  {(Object.keys(market.probabilities ?? {}).length > 0
+                    ? Object.keys(market.probabilities ?? {}).map((oid) => {
+                        const match = market.outcomes.find(
+                          (o) => o.outcome_id === oid
+                        );
+                        return (
+                          match || {
+                            outcome_id: oid,
+                            label: oid,
+                            current_probability:
+                              market.probabilities?.[oid] ?? null,
+                          }
+                        );
+                      })
+                    : market.outcomes
+                  ).map((outcome) => (
                     <div key={outcome.outcome_id} className="outcome-row">
                       <span className="outcome-label">{outcome.label}</span>
                       <span
